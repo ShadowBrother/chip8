@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <string>
 #include <stdio.h>
 
 #define mem_size 4096 //4k memory
@@ -35,6 +37,8 @@ typedef unsigned short dByte;//Double Byte(2 bytes = 16 bits, size of opcodes)
 class Chip8
 {
 private:
+	std::ostringstream *logg;
+
 	dByte opcode; //current opcode
 	byte memory[mem_size]; //4k memory
 	byte V[num_registers]; //16 registers, 16th register is the 'carry flag'
@@ -45,6 +49,7 @@ private:
 	byte sound_timer; //beeping sound played when sound timer value is nonzero
 	dByte stack[stack_size]; //stack for storing return adresses when calling subroutines
 	dByte sp; //stack pointer
+	
 	
 	
 	inline void push(dByte address)
@@ -71,8 +76,12 @@ private:
 	
 public:
 	Chip8();
+	virtual ~Chip8();
+
+	
+	std::ostringstream &Log();
 	byte gfx[screen_size]; //pixel array, 1 pixel is set, 0 pixel is not set
-	void initialize(); //initalize registers and memory
+	void initialize(std::ostringstream *oss); //initalize registers and memory
 	void emulateCycle(); //fetch, decode, execute opcode, update timers
 	void loadGame(char* game); //load game into memory
 	void accessMemory(dByte index, dByte opcode);

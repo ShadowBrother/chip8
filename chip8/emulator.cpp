@@ -161,8 +161,12 @@ namespace ch8Emulator{
 		glEnableVertexAttribArray(0);//location 0 as set in vertex shader
 		glBindVertexArray(0);
 
+		std::ostringstream os;
+		os << "test osstream" << std::endl;
+		std::cout << os.str();
+
 		//Initialize chip8
-		ch8.initialize();
+		ch8.initialize(&os);
 		//load game
 		try
 		{
@@ -187,7 +191,7 @@ namespace ch8Emulator{
 			
 			try
 			{
-				for (int i = 0; i < 6000000; i++){}//attempt to slow down emulation to match proper speed
+				for (int i = 0; i < 3000000; i++){}//attempt to slow down emulation to match proper speed
 				ch8.emulateCycle();//emulate one chip8 cpu cycle
 			}
 			catch (char* e)
@@ -230,8 +234,8 @@ namespace ch8Emulator{
 				ch8.drawFlag = false;//reset drawFlag
 			}
 		}
-
-		glfwTerminate();//clean up
+		ch8.~Chip8();//clean up ch8
+		glfwTerminate();//clean up graphics
 		return 0;
 
 	};
