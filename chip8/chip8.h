@@ -81,7 +81,7 @@ public:
 	
 	std::ostringstream &Log();
 	byte gfx[screen_size]; //pixel array, 1 pixel is set, 0 pixel is not set
-	void initialize(std::ostringstream *oss); //initalize registers and memory
+	void initialize(); //initalize registers and memory
 	void emulateCycle(); //fetch, decode, execute opcode, update timers
 	void loadGame(char* game); //load game into memory
 	void accessMemory(dByte index, dByte opcode);

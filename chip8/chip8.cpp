@@ -33,14 +33,14 @@ const std::string Chip8::keymap()
 
 Chip8::Chip8()
 {
-	std::ostringstream *oss = new std::ostringstream();
-	initialize(oss);
+	initialize();
 
 }
 
-void Chip8::initialize(std::ostringstream *oss)
+void Chip8::initialize()
 {
-	logg = oss;
+	
+	logg = new std::ostringstream();
 	Log() << "Initializing ostring stream\n";
 	std::cout << Log().str();
 	pc = 0x200; //Program counter starts at 0x200
@@ -84,15 +84,19 @@ void Chip8::initialize(std::ostringstream *oss)
 //Chip8 Destuctor
 Chip8::~Chip8()
 {
-	Log() << std::endl; //add endline to logg
-	//open output file stream
-	std::ofstream logFile;
-	logFile.open("D:\\My Documents\\Visual Studio 2013\\Projects\\chip8\\chip8Log", std::ios::out);
+	if (Log()){
+		if (Log().good()){
+			Log() << std::endl; //add endline to logg
+			//open output file stream
+			std::ofstream logFile;
+			logFile.open("D:\\My Documents\\Visual Studio 2013\\Projects\\chip8\\chip8Log", std::ios::out);
 
-	logFile << Log().str();//output logg string to file
-	std::cerr << logFile.fail();
+			logFile << Log().str();//output logg string to file
+			std::cerr << logFile.fail();
 
-	logFile.close();
+			logFile.close();
+		}
+	}
 }
 
 //returns the current program counter

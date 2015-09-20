@@ -1,5 +1,7 @@
 #include "chip8.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <tchar.h>
 #define GLEW_STATIC
 #include <GLEW/glew.h>
 #include <GLFW/glfw3.h>
@@ -7,7 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace ch8Emulator{
+
 
 	Chip8 ch8;//ch8 cpu object global to namespace
 
@@ -46,8 +48,16 @@ namespace ch8Emulator{
 		}
 	};
 
+	
 	int main(int argc, char* argv[])
 	{
+
+		if (argc < 2)
+		{
+			std::cout << "USAGE: chip8.exe gameFile" << std::endl;
+			return(-1);
+		}
+
 		//Initialize glfw
 		glfwInit();
 		//tell glfw to use OpenGL 3.3
@@ -161,16 +171,18 @@ namespace ch8Emulator{
 		glEnableVertexAttribArray(0);//location 0 as set in vertex shader
 		glBindVertexArray(0);
 
-		std::ostringstream os;
-		os << "test osstream" << std::endl;
-		std::cout << os.str();
+		
 
 		//Initialize chip8
-		ch8.initialize(&os);
+		ch8.initialize();
 		//load game
+
+		
+		
+				
 		try
 		{
-			ch8.loadGame("D:\\My Documents\\c8games\\PONG2");
+			ch8.loadGame(argv[1]);
 		}
 		catch (char* e)
 		{
@@ -234,7 +246,7 @@ namespace ch8Emulator{
 				ch8.drawFlag = false;//reset drawFlag
 			}
 		}
-		ch8.~Chip8();//clean up ch8
+		//ch8.~Chip8();//clean up ch8
 		glfwTerminate();//clean up graphics
 		return 0;
 
@@ -260,4 +272,3 @@ namespace ch8Emulator{
 
 		}
 	};
-}
