@@ -108,6 +108,7 @@ dByte Chip8::getPc()
 //returns opcode stored at memory location of current pc
 dByte Chip8::getOpcode(dByte pc)
 {
+	
 	return memory[pc] << 8 | memory[pc + 1];//opcode is 2 bytes, so must grab both halfs from memory
 }
 

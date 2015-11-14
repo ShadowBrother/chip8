@@ -37,7 +37,7 @@ typedef unsigned short dByte;//Double Byte(2 bytes = 16 bits, size of opcodes)
 
 class Chip8
 {
-	friend class RCA1802;//allows RCA1802 microprocessor to access chip8 private members like pc, memory, registers
+
 private:
 	std::ostringstream *logg;
 

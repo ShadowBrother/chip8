@@ -1,12 +1,27 @@
 #include "RCA1802.h"
+#include <stdlib.h>
 
+RCA1802::RCA1802()
+{
+	memory = (byte*)malloc(sizeof(byte) * 4096);//allocate 4k memory if none provided
+};
+
+RCA1802::RCA1802(int numBytes)
+{
+	memory = (byte*)malloc(sizeof(byte) * numBytes);
+}
+
+RCA1802::RCA1802(byte* memory)
+{
+	memory = memory;
+};
 
 void RCA1802::emulateCycle(){
 
 	//get I and N from memory, both used to determine Instruction
-	I = (chip8->memory[chip8->pc] & 0xF0) >> 4;//I is high 4-bits
-	N = chip8->memory[chip8->pc] & 0x0F;//N is low 4-bits
-	chip8->pc++;//increment pc
+	I = (memory[R[P]] & 0xF0) >> 4;//I is high 4-bits
+	N = memory[R[P]] & 0x0F;//N is low 4-bits
+	R[P]++;//increment pc
 
 	switch (I){//switch on Instruction register
 	case 0://IDL or LDN
@@ -18,7 +33,7 @@ void RCA1802::emulateCycle(){
 		else//LDN Load Via N
 		{
 			//copy the memory byte pointed to by the specified address register into the accumulator
-			D = chip8->memory[R[N]];
+			D = memory[R[N]];
 		}
 	}
 	break;
@@ -65,25 +80,25 @@ void RCA1802::emulateCycle(){
 
 		if (toBranch)
 		{//branch 
-			chip8->pc = (--(chip8->pc) & 0xFF00) | chip8->memory[chip8->pc];//short branch only changes least sig byte of pc
+			R[P] = (--(R[P]) & 0xFF00) | memory[R[P]];//short branch only changes least sig byte of pc
 		}
 		else
 		{//skip to next instruction
-			chip8->pc++;
+			R[P]++;
 		}
 	}
 	break;
 	case 4://LDA Load-Advance RN
 	{
 		//copy the memory byte pointed to by the specified address register into the accumulator
-		D = chip8->memory[R[N]];
+		D = memory[R[N]];
 		R[N]++;//advance RN
 	}
 	break;
 	case 5://STR Store Via RN
 	{
 		//using the specified address register, store contents of accumulator into memory
-		chip8->memory[R[N]] = D;
+		memory[R[N]] = D;
 	}
 	break;
 	case 6://IRX, Output, Input
@@ -97,14 +112,14 @@ void RCA1802::emulateCycle(){
 		{
 			//output on port p the memory byte pointed to by the address register pointed to by X,
 			//then increment the address register
-			p[N] = chip8->memory[R[X]++]; 
+			p[N] = memory[R[X]++]; 
 
 		}
 		if ((P >= 0x9) && (N <= 0xF))//INP
 		{
 			//input from port p a byte to be stored into the memory location pointed to by the address register
 			//pointed to by X and also place the byte into D
-			D = chip8->memory[R[X]] = p[N];
+			D = memory[R[X]] = p[N];
 		}
 
 	}
@@ -114,7 +129,7 @@ void RCA1802::emulateCycle(){
 		if (N <= 1)// RET return or DIS
 		{
 			//read the byte from the memory location pointed to by the register pointed to by X and increment that register
-			byte temp = chip8->memory[R[X]++];
+			byte temp = memory[R[X]++];
 			//copy right 4 bits read into P, and left 4 bits into X
 			P = temp & 0xF;
 			X = (temp & 0xF0) >> 4;
@@ -128,16 +143,16 @@ void RCA1802::emulateCycle(){
 		if (N == 2) //LDXA Load D via RX and Advance
 		{
 			//Load accumulator from memory byte pointed to by the address register pointed to by X and increment register
-			D = chip8->memory[R[X]++];
+			D = memory[R[X]++];
 		}
 		if (N == 3)//STXD Store Via RX and Decrement RX
 		{//Store the accumulator into the memory location pointed to by the address register pointed to by X and decrement 
-			chip8->memory[R[X]--] = D;
+			memory[R[X]--] = D;
 		}
 		if (N == 4)//ADC add with carry
 		{
 			//add memory byte pointed to by the address register pointed to by X, the value of DF register and accumulator
-			byte temp = chip8->memory[R[X]] + DF;//RX + DF
+			byte temp = memory[R[X]] + DF;//RX + DF
 			
 			if (temp > (0xFF - D))//check if addition will overflow byte
 			{
@@ -154,7 +169,7 @@ void RCA1802::emulateCycle(){
 		if (N == 5)//SDB Subtract D from memory with Borrow
 		{
 			
-			byte temp = chip8->memory[R[X]] + DF - 1; // adjust memory value with Borrow.DF == 0 means borrow(subtract 1), DF == 1 means no borrow
+			byte temp = memory[R[X]] + DF - 1; // adjust memory value with Borrow.DF == 0 means borrow(subtract 1), DF == 1 means no borrow
 			if (temp < D)//will borrow
 			{
 				DF = 0;
@@ -178,7 +193,7 @@ void RCA1802::emulateCycle(){
 		{
 			
 			D += DF - 1;//adjust D with Borrow. DF == 0 means borrow(subtract 1), DF == 1 means no borrow 
-			if (chip8->memory[R[X]] > D)//will borrow
+			if (memory[R[X]] > D)//will borrow
 			{
 				DF = 0;
 			}
@@ -186,13 +201,13 @@ void RCA1802::emulateCycle(){
 			{
 				DF = 1;
 			}
-			D -= chip8->memory[R[X]] ;
+			D -= memory[R[X]] ;
 			
 		}
 		if (N == 8)//SAV SAVe T
 		{
 			//copy contents of the T register into the memory location pointed to by the address register pointed to by X
-			chip8->memory[R[X]] = T;
+			memory[R[X]] = T;
 		}
 		if (N == 9)//MARK Save X and P in T
 		{
@@ -211,7 +226,7 @@ void RCA1802::emulateCycle(){
 		if (N == 0xC)//ADCI b ADd with Carry Immediate
 		{
 			//Add the memory byte pointed to by the second byte of the instruction plus value of DF to D
-			byte temp = chip8->memory[chip8->pc++] + DF;//DF + second byte of instruction, increment pc for next instruction
+			byte temp = memory[R[P]++] + DF;//DF + second byte of instruction, increment pc for next instruction
 			
 			if (temp > (0xFF - D))//check if addition will overflow byte
 			{
@@ -227,7 +242,7 @@ void RCA1802::emulateCycle(){
 		}
 		if (N == 0xD)//SDBI b Subtract D from Immediate byte with Borrow
 		{
-			byte temp = chip8->memory[chip8->pc++] + DF - 1;//adjust memory value with Borrow. DF == 0 means borrow(subtract 1), DF == 1 means no borrow 
+			byte temp = memory[R[P]++] + DF - 1;//adjust memory value with Borrow. DF == 0 means borrow(subtract 1), DF == 1 means no borrow 
 			if (temp < D)//will borrow
 			{
 				DF = 0;
@@ -249,7 +264,7 @@ void RCA1802::emulateCycle(){
 		if (N == 0xF)//SMBI b Subtract Memory Immediate from D, with Borrow
 		{
 			D += DF - 1;//adjust D with Borrow. DF == 0 means borrow(subtract 1), DF == 1 means no borrow 
-			byte temp = chip8->memory[chip8->pc++]; //store next mem byte, increment pc to next instruction
+			byte temp = memory[R[P]++]; //store next mem byte, increment pc to next instruction
 			if (temp > D)//will borrow
 			{
 				DF = 0;
@@ -266,26 +281,26 @@ void RCA1802::emulateCycle(){
 	case 8://GLO Get LOw Byte of RN
 	{
 		//Copy the least significant 8 bits of the specified register into D
-		D = chip8->memory[R[N]] & 0xFF;
+		D = memory[R[N]] & 0xFF;
 	}
 	break;
 	case 9://GHI Get High byte of register RN
 	{
 		//Copy the most significant 8 bits of specified register into D
-		D = chip8->memory[R[N]] & 0xFF00;
+		D = memory[R[N]] & 0xFF00;
 	}
 	break;
 	case 0xA://PLO Put D into LOw byte of register
 	{
 		//Copy D into the least significant 8 bits of the specified register
-		chip8->memory[R[N]] = (chip8->memory[R[N]] & 0xFF00) | D;
+		memory[R[N]] = (memory[R[N]] & 0xFF00) | D;
 		
 	}
 	break;
 	case 0xB://PHI Put D into HIgh byte of register
 	{
 		//Copy D into the most significant 8 bits the specified register
-		chip8->memory[R[N]] = (chip8->memory[R[N]] & 0xFF) | ((dByte)D << 8);
+		memory[R[N]] = (memory[R[N]] & 0xFF) | ((dByte)D << 8);
 	}
 	break;
 	case 0xC://Long Branches/Skips
@@ -359,11 +374,11 @@ void RCA1802::emulateCycle(){
 
 		if (toBranch)//branch using next 2 bytes
 		{
-			chip8->pc = dByte((chip8->memory[chip8->pc]) << 8) | dByte(chip8->memory[chip8->pc + 1]);//Set next 2 bytes as pc
+			R[P] = dByte((memory[R[P]]) << 8) | dByte(memory[R[P] + 1]);//Set next 2 bytes as pc
 		}
 		else if (toSkip)//Skip 2 bytes
 		{
-			chip8->pc += 2;
+			R[P] += 2;
 		}
 
 	}
@@ -385,31 +400,31 @@ void RCA1802::emulateCycle(){
 		if (N == 0)//LDX Load D via RX
 		{
 			//Load accumulator from memory byte pointed to by RX
-			D = chip8->memory[R[X]];
+			D = memory[R[X]];
 		}
 		
 		if (N == 1)//OR  Logical OR
 		{
 			//Set D to the Logical OR of D and memory pointed to by RX
-			D = D | chip8->memory[R[X]];
+			D = D | memory[R[X]];
 		}
 
 		if (N == 2)//AND Logical AND
 		{
 			//Set D to the logical AND of D and memory pointed to by RX
-			D = D & chip8->memory[R[X]];
+			D = D & memory[R[X]];
 		}
 
 		if (N == 3)//XOR eXclusive OR
 		{
 			//Set D to the exclusive OR of D and memory pointed to by RX
-			D = D ^ chip8->memory[R[X]];
+			D = D ^ memory[R[X]];
 		}
 
 		if (N = 4)//ADD Add
 		{
 			//Set D to the addition of D and memory pointed to by RX, Set DF to 1 if carry
-			if (chip8->memory[R[X]] > 0xFF - D)//carry
+			if (memory[R[X]] > 0xFF - D)//carry
 			{
 				DF = 1;
 			}
@@ -418,13 +433,13 @@ void RCA1802::emulateCycle(){
 				DF = 0;
 			}
 
-			D += chip8->memory[R[X]];
+			D += memory[R[X]];
 		}
 
 		if (N == 5)//SD Subtract D from memory
 		{
 			//Subtract accumulator from byte in memory pointed to by RX
-			if (D > chip8->memory[R[X]])//check if result will be negative
+			if (D > memory[R[X]])//check if result will be negative
 			{
 				DF = 0;
 			}
@@ -432,7 +447,7 @@ void RCA1802::emulateCycle(){
 			{
 				DF = 1;
 			}
-			D = chip8->memory[R[X]] - D;
+			D = memory[R[X]] - D;
 		}
 
 		if (N == 6)//SHR SHift D Right
@@ -445,44 +460,44 @@ void RCA1802::emulateCycle(){
 		if (N == 7)//SM Subract Memory byte from D
 		{
 			//Subtract byte from memory pointed to by RX from D, store carry out in DF
-			if (chip8->memory[R[X]] > D){//check if result will be negative
+			if (memory[R[X]] > D){//check if result will be negative
 				DF = 0;
 			}
 			else
 			{
 				DF = 1;
 			}
-			D -= chip8->memory[R[X]];
+			D -= memory[R[X]];
 		}
 
 		if (N == 8)//LDI Load D Immediate
 		{
 			//Copy the second byte of the instruction into D
-			D = chip8->memory[chip8->pc++];//Set D and increment pc
+			D = memory[R[P]++];//Set D and increment pc
 		}
 
 		if (N == 9)//ORI  Logical OR Immediate
 		{
 			//Set D to the Logical OR of D and byte following instruction
-			D = D | chip8->memory[chip8->pc++];
+			D = D | memory[R[P]++];
 		}
 
 		if (N == 0xA)//ANI Logical ANd Immediate
 		{
 			//Set D to the logical AND of D and byte following instruction
-			D = D & chip8->memory[chip8->pc++];
+			D = D & memory[R[P]++];
 		}
 
 		if (N == 0xB)//XRI eXclusive oR Immediate
 		{
 			//Set D to the exclusive OR of D and byte following instruction
-			D = D ^ chip8->memory[chip8->pc++];
+			D = D ^ memory[R[P]++];
 		}
 
 		if (N == 0xC)//ADI ADd Immediate
 		{
 			//Set D to the sum of D and next byte of instruction, put carry in DF
-			if (chip8->memory[chip8->pc] > 0xFF - D)//test if carry
+			if (memory[R[P]] > 0xFF - D)//test if carry
 			{
 				DF = 1;
 			}
@@ -490,13 +505,13 @@ void RCA1802::emulateCycle(){
 			{
 				DF = 0;
 			}
-			D += chip8->memory[chip8->pc++];//Set D and increment pc
+			D += memory[R[P]++];//Set D and increment pc
 		}
 
 		if (N == 0xD)//SDI Subtract D from Immediate byte
 		{
 			//Subtract D from second byte of instruction, storing result in D
-			if (D > chip8->memory[chip8->pc])//test if result will be negative
+			if (D > memory[R[P]])//test if result will be negative
 			{
 				DF = 0;
 			}
@@ -504,7 +519,7 @@ void RCA1802::emulateCycle(){
 			{
 				DF = 1;
 			}
-			D = chip8->memory[chip8->pc] - D;
+			D = memory[R[P]] - D;
 		}
 
 		if (N == 0xE)//SHL SHift D Left
@@ -517,7 +532,7 @@ void RCA1802::emulateCycle(){
 		if (N == 0xF)//SMI Subtract Memory from D, Immediate
 		{
 			//Subtract Memory byte pointed to by RX from D, store in D
-			if (D < chip8->memory[R[X]])
+			if (D < memory[R[X]])
 			{
 				DF = 0;
 			}
@@ -525,7 +540,7 @@ void RCA1802::emulateCycle(){
 			{
 				DF = 1;
 			}
-			D -= chip8->memory[R[X]];
+			D -= memory[R[X]];
 		}
 
 	}

@@ -1,7 +1,6 @@
 #ifndef _RCA1802
 #define _RCA1802
 
-#include "chip8.h"
 
 //RCA1802 microprocessor emulator
 //references: http://www.atarimagazines.com/computeii/issue3/page52.php, http://cosmacelf.com/publications/books/short-course-in-programming.html#chapter2
@@ -9,12 +8,12 @@
 typedef unsigned char byte;
 typedef unsigned short dByte;
 
-class Chip8;
 
 class RCA1802
 {
 private:
 
+	byte* memory;//system memory
 	byte D;//Accumulator, used for operating on data
 	dByte R[16];//16 16-bit address registers
 	byte P;//a "4 bit" register that points to the register which contains the PC(program counter)
@@ -29,12 +28,13 @@ private:
 	byte p[16];//input/output ports
 
 	bool IDL; //true for idle, false for running
-	Chip8 *chip8;//pointer to chip8 instance for accessing pc, memory, chip8 registers
+	
 public:
-	RCA1802();
-	RCA1802(Chip8 *ch8);
-	void initialize(Chip8 *ch8);
-	void emulateCycle();
+	RCA1802();//will allocate 4k of memory
+	RCA1802(int numBytes);//will allocate numBytes of memory
+	RCA1802(byte* memory);//will use existing byte array as memory
+	void initialize();//initialize registers
+	void emulateCycle();//emulate one clock cycle
 
 };
 
