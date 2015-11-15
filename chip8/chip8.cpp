@@ -99,6 +99,15 @@ Chip8::~Chip8()
 	}
 }
 
+RCA1802* Chip8::getRCA()//return instance of RCA1802 microprocessor
+{
+	if (RCA == nullptr)
+	{
+		RCA = new RCA1802(memory);
+	}
+	return RCA;
+};
+
 //returns the current program counter
 dByte Chip8::getPc()
 {
@@ -219,6 +228,13 @@ void Chip8::emulateCycle()
 			Log().copyfmt(hexState);
 			Log() << (opcode & addressMask) << endl;
 			Log().copyfmt(normalState);
+			RCA1802 *rca = getRCA();
+			rca->setPC(opcode & addressMask);
+			do
+			{
+				
+			} while (rca->emulateCycle() != 0xD4);//run rca program until instruction D4(NOP) occurs, indicating end of RCA program
+			pc += 2;//increment pc
 
 			break;
 		}

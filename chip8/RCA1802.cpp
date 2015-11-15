@@ -1,22 +1,55 @@
 #include "RCA1802.h"
 #include <stdlib.h>
+#include <iostream>
+#include <fstream>
 
+//default constructor, creates 4k memory if none provided
 RCA1802::RCA1802()
 {
 	memory = (byte*)malloc(sizeof(byte) * 4096);//allocate 4k memory if none provided
 };
 
+//constructor that takes size of memory to allocate
 RCA1802::RCA1802(int numBytes)
 {
 	memory = (byte*)malloc(sizeof(byte) * numBytes);
 }
 
+//constructor that takes a reference to existing memory to use
 RCA1802::RCA1802(byte* memory)
 {
-	memory = memory;
+	RCA1802::memory = memory;
 };
 
-void RCA1802::emulateCycle(){
+void RCA1802::initialize()
+{
+	//initialize registers and input/outputs to 0
+	for (int i = 0; i < 16; i++)
+	{
+		R[i] = 0;//registers
+		p[i] = 0;//input/output
+	}
+	
+	I = N = D = T = P = X = DF = 0;
+
+	//set boolean values to false
+	IE = Q = IDL = false;
+	for (int i = 0; i < 4; i++)
+	{
+		EF[i] = false;
+	}
+}
+
+//set pc to address
+void RCA1802::setPC(dByte address)
+{
+	R[P] = address;
+}
+
+
+//emulate one cycle, executing next instruction pointed to by pc stored in R[P]
+//returns instruction IN
+dByte RCA1802::emulateCycle(){
 
 	//get I and N from memory, both used to determine Instruction
 	I = (memory[R[P]] & 0xF0) >> 4;//I is high 4-bits
@@ -28,7 +61,7 @@ void RCA1802::emulateCycle(){
 	{
 		if (N == 0){//IDL idle
 			IDL = true;//set idle to true and end cycle
-			return;
+			return 0;
 		}
 		else//LDN Load Via N
 		{
@@ -80,7 +113,7 @@ void RCA1802::emulateCycle(){
 
 		if (toBranch)
 		{//branch 
-			R[P] = (--(R[P]) & 0xFF00) | memory[R[P]];//short branch only changes least sig byte of pc
+			R[P] = ((R[P] - 1) & 0xFF00) | memory[R[P]];//short branch only changes least sig byte of pc
 		}
 		else
 		{//skip to next instruction
@@ -281,26 +314,26 @@ void RCA1802::emulateCycle(){
 	case 8://GLO Get LOw Byte of RN
 	{
 		//Copy the least significant 8 bits of the specified register into D
-		D = memory[R[N]] & 0xFF;
+		D = R[N] & 0xFF;
 	}
 	break;
 	case 9://GHI Get High byte of register RN
 	{
 		//Copy the most significant 8 bits of specified register into D
-		D = memory[R[N]] & 0xFF00;
+		D = R[N] & 0xFF00;
 	}
 	break;
 	case 0xA://PLO Put D into LOw byte of register
 	{
 		//Copy D into the least significant 8 bits of the specified register
-		memory[R[N]] = (memory[R[N]] & 0xFF00) | D;
+		R[N] = (R[N] & 0xFF00) | D;
 		
 	}
 	break;
 	case 0xB://PHI Put D into HIgh byte of register
 	{
 		//Copy D into the most significant 8 bits the specified register
-		memory[R[N]] = (memory[R[N]] & 0xFF) | ((dByte)D << 8);
+		R[N] = (R[N] & 0xFF) | ((dByte)D << 8);
 	}
 	break;
 	case 0xC://Long Branches/Skips
@@ -421,7 +454,7 @@ void RCA1802::emulateCycle(){
 			D = D ^ memory[R[X]];
 		}
 
-		if (N = 4)//ADD Add
+		if (N == 4)//ADD Add
 		{
 			//Set D to the addition of D and memory pointed to by RX, Set DF to 1 if carry
 			if (memory[R[X]] > 0xFF - D)//carry
@@ -544,5 +577,28 @@ void RCA1802::emulateCycle(){
 		}
 
 	}
+	
 	};
+	return (I << 4) | N; //return last instruction (IN)
 };
+
+//loads program from file into memory
+//program: string containing filename of program to load
+//startAddress: memory address to start writing program to 
+void RCA1802::loadProgram(char* program, dByte startAddress)
+{
+	dByte pc = startAddress;//where in memory to write incoming data
+	std::ifstream infile;
+	infile.open(program, std::ios::binary | std::ios::in);
+	byte aByte = infile.get();
+	if (infile.bad())
+	{
+		throw("Error reading file: %s\n", program);
+	}
+	while (infile.good())
+	{
+		memory[pc++] = aByte;//store game byte into memory, increment pc
+		aByte = infile.get();//get next byte of data
+	}
+	infile.close();
+}

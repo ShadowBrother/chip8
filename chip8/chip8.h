@@ -52,6 +52,8 @@ private:
 	dByte stack[stack_size]; //stack for storing return adresses when calling subroutines
 	dByte sp; //stack pointer
 	
+	RCA1802* RCA;//RCA1802 microprocessor
+	RCA1802* getRCA();//return instance of RCA1802 microprocessor
 	
 	
 	inline void push(dByte address)

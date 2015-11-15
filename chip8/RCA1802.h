@@ -34,7 +34,10 @@ public:
 	RCA1802(int numBytes);//will allocate numBytes of memory
 	RCA1802(byte* memory);//will use existing byte array as memory
 	void initialize();//initialize registers
-	void emulateCycle();//emulate one clock cycle
+	dByte emulateCycle();//emulate one clock cycle, returns last performed instruction(IN)
+
+	void RCA1802::loadProgram(char* program, dByte startAddress = 0);//load program into memory, starting at address startAddress
+	void setPC(dByte address);//set program counter to address
 
 };
 
