@@ -127,6 +127,10 @@ void Chip8::loadGame(char* game)
 	std::ifstream infile;
 	infile.open(game, std::ios::binary | std::ios::in);
 	byte aByte = infile.get();
+	if (infile.fail())
+	{
+		throw("Error reading file: %s\n", game);
+	}
 	if (infile.bad())
 	{
 		throw("Error reading file: %s\n", game);

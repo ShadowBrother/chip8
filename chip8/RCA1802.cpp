@@ -7,18 +7,21 @@
 RCA1802::RCA1802()
 {
 	memory = (byte*)malloc(sizeof(byte) * 4096);//allocate 4k memory if none provided
+	initialize();
 };
 
 //constructor that takes size of memory to allocate
 RCA1802::RCA1802(int numBytes)
 {
 	memory = (byte*)malloc(sizeof(byte) * numBytes);
+	initialize();
 }
 
 //constructor that takes a reference to existing memory to use
 RCA1802::RCA1802(byte* memory)
 {
 	RCA1802::memory = memory;
+	initialize();
 };
 
 void RCA1802::initialize()
@@ -89,7 +92,7 @@ dByte RCA1802::emulateCycle(){
 			{
 				toBranch = true;
 			}
-			if (N == 0x1 || N == 9){//branching based on Q
+			else if (N == 0x1 || N == 9){//branching based on Q
 				toBranch = Q;
 			}
 			else if (N == 0x2 || N == 0xA)//branching based on whether D is Zero
@@ -320,7 +323,7 @@ dByte RCA1802::emulateCycle(){
 	case 9://GHI Get High byte of register RN
 	{
 		//Copy the most significant 8 bits of specified register into D
-		D = R[N] & 0xFF00;
+		D = (R[N] & 0xFF00) >> 8;
 	}
 	break;
 	case 0xA://PLO Put D into LOw byte of register
@@ -382,16 +385,17 @@ dByte RCA1802::emulateCycle(){
 		}
 		if (N == 6 || N == 0xE)//Skip on Zero
 		{
-			if (D == 0)
+			if (D != 0)
 			{
-				toSkip = true;
+				toSkip = false;
 			}
+			
 		}
 		if (N == 7 || N == 0xF)//Skip on DF
 		{
-			if (DF == 1)
+			if (DF != 1)
 			{
-				toSkip = true;
+				toSkip = false;
 			}
 		}
 
@@ -590,10 +594,18 @@ void RCA1802::loadProgram(char* program, dByte startAddress)
 	dByte pc = startAddress;//where in memory to write incoming data
 	std::ifstream infile;
 	infile.open(program, std::ios::binary | std::ios::in);
+	if (infile.fail())
+	{
+		throw("Error opening file: %s\n", program);
+	}
 	byte aByte = infile.get();
 	if (infile.bad())
 	{
 		throw("Error reading file: %s\n", program);
+	}
+	if (infile.eof())
+	{
+		throw("File %s is empty.", program);
 	}
 	while (infile.good())
 	{
