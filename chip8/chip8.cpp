@@ -182,52 +182,46 @@ void Chip8::emulateCycle()
 	{
 		//cases based on first 4 bits of opcode, some cases will need deeper switches
 	case 0x0000://0x0NNN, 0x00E0, or 0x00EE
-		switch (opcode & 0x0F00)
+		switch (opcode & 0x00FF)
 		{
-		case 0x0000://0x00E0 or 0x00EE
-			switch (opcode & 0x000F)
+		case 0x00E0://0x00E0 or 0x00EE
+			//0x00E0 Clear Screen
+			printf("Clear Screen\n");
+			Log() << "Clear Screen\n";
+
+			for (int i = 0; i < screen_size; i++)
 			{
-			case 0x0000://0x00E0 Clear Screen
-				printf("Clear Screen\n");
-				Log() << "Clear Screen\n";
-
-				for (int i = 0; i < screen_size; i++)
-				{
-					gfx[i] = 0;
-				}
-				drawFlag = true;//output changed, so set draw flag
-				pc+= 2;
-				break;
-			case 0x000E: //0x00EE Returns from subroutine
-				//return from subroutine
-				printf("Return from subroutine\n");
-				Log() << "Return from subroutine: ";
-				try
-				{
-					pc = pop();//pop return address off stack
-
-					Log().copyfmt(hexState);//set to hex formatting
-					Log() << pc << endl;//log return address
-					Log().copyfmt(normalState);//set to normal formatting
-				}
-				catch (char* e)
-				{
-					printf("%s\n", e);
-					Log() << endl << e << endl;
-					throw e;
-				}
-				pc += 2;//move to next instruction
-				break;
-			default:
-				printf("Unknown opcode : 0x % X\n", opcode);
-				break;
+				gfx[i] = 0;
 			}
+			drawFlag = true;//output changed, so set draw flag
+			pc += 2;
 			break;
-		
+		case 0x00EE: //0x00EE Returns from subroutine
+			//return from subroutine
+			printf("Return from subroutine\n");
+			Log() << "Return from subroutine: ";
+			try
+			{
+				pc = pop();//pop return address off stack
+
+				Log().copyfmt(hexState);//set to hex formatting
+				Log() << pc << endl;//log return address
+				Log().copyfmt(normalState);//set to normal formatting
+			}
+			catch (char* e)
+			{
+				printf("%s\n", e);
+				Log() << endl << e << endl;
+				throw e;
+			}
+			pc += 2;//move to next instruction
+			break;
+
+
 		default: //0x0NNN calls RCA 1802 program at address NNN
 			//call RCA 1802 program
 			printf("call RCA 1802 program at adress 0x%X\n", opcode & addressMask);
-			
+
 			Log() << "call RCA 1802 program at adress 0x";
 			Log().copyfmt(hexState);
 			Log() << (opcode & addressMask) << endl;
@@ -236,13 +230,15 @@ void Chip8::emulateCycle()
 			rca->setPC(opcode & addressMask);
 			do
 			{
-				
+
 			} while (rca->emulateCycle() != 0xD4);//run rca program until instruction D4(NOP) occurs, indicating end of RCA program
 			pc += 2;//increment pc
 
 			break;
 		}
-		break; 
+		break;
+	
+		
 	case 0x1000://1NNN jumps to address NNN
 		pc = opcode & addressMask;
 		Log() << "jump to address ";
