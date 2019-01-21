@@ -10,6 +10,7 @@
 #include <string>
 #include <stdio.h>
 #include "RCA1802.h"
+#include "Logger.h"
 
 #define mem_size 4096 //4k memory
 #define screen_width 64
@@ -39,7 +40,7 @@ class Chip8
 {
 
 private:
-	std::ostringstream *logg;
+	//std::ostringstream *logg;
 
 	dByte opcode; //current opcode
 	byte memory[mem_size]; //4k memory
@@ -83,7 +84,7 @@ public:
 	virtual ~Chip8();
 
 	
-	std::ostringstream &Log();
+	//std::ostringstream &Log();
 	byte gfx[screen_size]; //pixel array, 1 pixel is set, 0 pixel is not set
 	void initialize(); //initalize registers and memory
 	void emulateCycle(); //fetch, decode, execute opcode, update timers
