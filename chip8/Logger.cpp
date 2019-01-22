@@ -1,12 +1,19 @@
 #include "Logger.h"
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <string>
 
+Logger *Logr = new Logger("D:\\My Documents\\GitHub\\chip8\\Debug\\g_chip8Log");
+
+Logger::Logger(std::string filename) {
+	Logger::filename = filename;
+	Logger::logg = new std::ostringstream();
+}
 
 std::ostringstream &Logger::Log() {
-	if (!Logger::logg) {
-		Logger::logg = new std::ostringstream();
-
-	}
-	return *logg;
+	
+	return *Logger::logg;
 }
 
 void Logger::writeLog() {

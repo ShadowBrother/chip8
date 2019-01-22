@@ -9,17 +9,19 @@
 #include <fstream>
 #include <string>
 
-std::string filename = "log";
-
-static class Logger {
+class Logger {
 
 
-private:
-	static std::ostringstream *logg;
-	
-public:
-	static std::ostringstream &Log();
-	static void writeLog();
+	private:
+		std::string filename;
+		std::ostringstream *logg;
+	public:
+		Logger(std::string filename);
+		
+		std::ostringstream &Log();
+		void writeLog();
 };
+
+extern Logger *Logr;
 
 #endif

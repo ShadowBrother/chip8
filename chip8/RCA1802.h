@@ -5,6 +5,8 @@
 //RCA1802 microprocessor emulator
 //references: http://www.atarimagazines.com/computeii/issue3/page52.php, http://cosmacelf.com/publications/books/short-course-in-programming.html#chapter2
 
+#include "Logger.h"
+
 typedef unsigned char byte;
 typedef unsigned short dByte;
 

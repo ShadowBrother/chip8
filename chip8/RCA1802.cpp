@@ -26,6 +26,11 @@ RCA1802::RCA1802(byte* memory)
 
 void RCA1802::initialize()
 {
+
+	if (Logr == nullptr) {
+		Logr = new Logger("D:\\My Documents\\GitHub\\chip8\\Debug\\RCALog");
+	}
+	Logr->Log() << "initializing RCA1802" << std::endl;
 	//initialize registers and input/outputs to 0
 	for (int i = 0; i < 16; i++)
 	{
